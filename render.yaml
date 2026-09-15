@@ -1,0 +1,14 @@
+# Render blueprint for Ingarden.
+# Apply with: Render dashboard → New → Blueprint → point at this repo
+# (or New → Static Site with the same build settings).
+services:
+  - type: web
+    name: ingarden
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
