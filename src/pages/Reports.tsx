@@ -194,6 +194,7 @@ export default function Reports() {
               <th className="num">Posts</th>
               <th className="num">Clicks</th>
               <th className="num">Views</th>
+              <th className="num" title="Spend per 1,000 views">CPM</th>
             </tr>
           </thead>
           <tbody>
@@ -207,9 +208,10 @@ export default function Reports() {
                 <td className="num">{r.posts}</td>
                 <td className="num">{r.clicks || '—'}</td>
                 <td className="num">{r.views ? r.views.toLocaleString('en-GB') : '—'}</td>
+                <td className="num">{r.views ? formatCents(Math.round((r.spendCents / r.views) * 1000)) : '—'}</td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={8} className="muted">Nothing in this range.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={9} className="muted">Nothing in this range.</td></tr>}
           </tbody>
           {rows.length > 0 && (
             <tfoot>
@@ -222,6 +224,7 @@ export default function Reports() {
                 <td className="num">{totals.posts}</td>
                 <td className="num">{totals.clicks || '—'}</td>
                 <td className="num">{totals.views ? totals.views.toLocaleString('en-GB') : '—'}</td>
+                <td className="num">{totals.views ? formatCents(Math.round((totals.spendCents / totals.views) * 1000)) : '—'}</td>
               </tr>
             </tfoot>
           )}
