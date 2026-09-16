@@ -20,8 +20,8 @@ export type Influencer = {
   status: InfluencerStatus;
   tags: string[];
   follower_count: number | null;
-  avg_story_views: number | null;
-  avg_reel_views: number | null;
+  median_story_views: number | null;
+  median_reel_views: number | null;
   story_rate_cents: number | null;
   reel_rate_cents: number | null;
   currency: string;
@@ -52,6 +52,7 @@ export type Post = {
   views: number | null;
   likes: number | null;
   comments_count: number | null;
+  saves: number | null;
   reach: number | null;
   notes: string;
   created_at: string;

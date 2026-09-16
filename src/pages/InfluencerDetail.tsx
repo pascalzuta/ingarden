@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import MonthBars from '../components/MonthBars';
 import { useAppData } from '../lib/data';
 import { formatCents, parseMoneyToCents } from '../lib/money';
-import { formatRoas, lastMonths, monthlyRollup, postCostCents, roas } from '../lib/stats';
+import { cpmCents, formatRoas, lastMonths, monthlyRollup, postCostCents, roas } from '../lib/stats';
 import { TRACKED_LINK_BASE, supabase } from '../lib/supabase';
 import {
   INFLUENCER_STATUS_LABELS,
@@ -72,6 +72,8 @@ export default function InfluencerDetail({ member }: { member: TeamMember }) {
         .map((t) => t.trim())
         .filter(Boolean),
       follower_count: f.get('followers') ? Number(f.get('followers')) : null,
+      median_story_views: f.get('median_story_views') ? Number(f.get('median_story_views')) : null,
+      median_reel_views: f.get('median_reel_views') ? Number(f.get('median_reel_views')) : null,
       story_rate_cents: parseMoneyToCents(String(f.get('story_rate') || '')),
       reel_rate_cents: parseMoneyToCents(String(f.get('reel_rate') || '')),
       notes: String(f.get('notes') || ''),
@@ -147,6 +149,16 @@ export default function InfluencerDetail({ member }: { member: TeamMember }) {
       </div>
 
       <div className="stat-row">
+        <div className="stat">
+          <div className="label">Story CPM</div>
+          <div className="value">{formatCents(cpmCents(influencer.story_rate_cents, influencer.median_story_views), influencer.currency)}</div>
+          <div className="hint">rate ÷ median story views × 1,000</div>
+        </div>
+        <div className="stat">
+          <div className="label">Reel CPM</div>
+          <div className="value">{formatCents(cpmCents(influencer.reel_rate_cents, influencer.median_reel_views), influencer.currency)}</div>
+          <div className="hint">rate ÷ median reel views × 1,000</div>
+        </div>
         <div className="stat"><div className="label">Lifetime revenue</div><div className="value">{formatCents(totalRevenue, influencer.currency)}</div></div>
         <div className="stat"><div className="label">Lifetime spend</div><div className="value">{formatCents(totalSpend, influencer.currency)}</div></div>
         <div className="stat"><div className="label">ROAS</div><div className="value">{formatRoas(roas(totalRevenue, totalSpend))}</div></div>
@@ -182,6 +194,8 @@ export default function InfluencerDetail({ member }: { member: TeamMember }) {
               <label className="field"><span>Discount code</span><input name="code" defaultValue={influencer.discount_code} /></label>
               <label className="field"><span>Tags (comma-separated)</span><input name="tags" defaultValue={influencer.tags.join(', ')} /></label>
               <label className="field"><span>Followers</span><input name="followers" type="number" defaultValue={influencer.follower_count ?? ''} /></label>
+              <label className="field"><span>Median story views (last ~10)</span><input name="median_story_views" type="number" defaultValue={influencer.median_story_views ?? ''} /></label>
+              <label className="field"><span>Median reel views (last ~10)</span><input name="median_reel_views" type="number" defaultValue={influencer.median_reel_views ?? ''} /></label>
               <label className="field"><span>Story rate</span><input name="story_rate" defaultValue={influencer.story_rate_cents != null ? (influencer.story_rate_cents / 100).toString() : ''} /></label>
               <label className="field"><span>Reel rate</span><input name="reel_rate" defaultValue={influencer.reel_rate_cents != null ? (influencer.reel_rate_cents / 100).toString() : ''} /></label>
             </div>
@@ -259,26 +273,38 @@ export default function InfluencerDetail({ member }: { member: TeamMember }) {
             <table className="data">
               <thead>
                 <tr>
-                  <th>Scheduled</th>
                   <th>Ran</th>
                   <th>Format</th>
-                  <th>Status</th>
                   <th className="num">Cost</th>
+                  <th className="num">Views</th>
+                  <th className="num">Clicks</th>
+                  <th className="num">Orders</th>
+                  <th className="num">Saves</th>
                   <th className="num">Revenue</th>
+                  <th className="num">ROAS</th>
                 </tr>
               </thead>
               <tbody>
-                {posts.map((p) => (
-                  <tr key={p.id}>
-                    <td>{p.scheduled_at ? new Date(p.scheduled_at).toLocaleDateString('en-GB') : '—'}</td>
-                    <td>{p.posted_at ? new Date(p.posted_at).toLocaleDateString('en-GB') : '—'}</td>
-                    <td><span className="badge format">{p.format}</span></td>
-                    <td><span className={`badge status-${p.status}`}>{POST_STATUS_LABELS[p.status]}</span></td>
-                    <td className="num">{formatCents(postCostCents(p), p.currency)}</td>
-                    <td className="num">{formatCents(revenueForPost(p.id), p.currency)}</td>
-                  </tr>
-                ))}
-                {posts.length === 0 && <tr><td colSpan={6} className="muted">No posts yet. Add one under Posts.</td></tr>}
+                {posts.map((p) => {
+                  const revenue = revenueForPost(p.id);
+                  const orders = conversions.filter((c) => c.post_id === p.id).length;
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        {p.posted_at ? new Date(p.posted_at).toLocaleDateString('en-GB') : <span className={`badge status-${p.status}`}>{POST_STATUS_LABELS[p.status]}</span>}
+                      </td>
+                      <td><span className="badge format">{p.format}</span></td>
+                      <td className="num">{formatCents(postCostCents(p), p.currency)}</td>
+                      <td className="num">{p.views?.toLocaleString('en-GB') ?? '—'}</td>
+                      <td className="num">{p.link_id ? clicksForLink(p.link_id) : '—'}</td>
+                      <td className="num">{orders || '—'}</td>
+                      <td className="num">{p.saves?.toLocaleString('en-GB') ?? '—'}</td>
+                      <td className="num">{formatCents(revenue, p.currency)}</td>
+                      <td className="num">{formatRoas(roas(revenue, postCostCents(p)))}</td>
+                    </tr>
+                  );
+                })}
+                {posts.length === 0 && <tr><td colSpan={9} className="muted">No posts yet. Add one under Posts.</td></tr>}
               </tbody>
             </table>
           </div>

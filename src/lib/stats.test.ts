@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lastMonths, monthKey, monthlyRollup, postSpendMonth, roas, rollupByInfluencer } from './stats';
+import { cpmCents, lastMonths, monthKey, monthlyRollup, postSpendMonth, roas, rollupByInfluencer } from './stats';
 
 describe('monthKey', () => {
   it('extracts YYYY-MM', () => {
@@ -66,6 +66,18 @@ describe('rollupByInfluencer', () => {
     );
     expect(map.get('a')).toMatchObject({ revenueCents: 5000, spendCents: 2000, conversions: 2, postedPosts: 1, clicks: 42 });
     expect(map.get('b')).toMatchObject({ revenueCents: 0, spendCents: 3100, posts: 1, postedPosts: 0 });
+  });
+});
+
+describe('cpmCents', () => {
+  it('is cost per thousand views', () => {
+    // €250 story rate, 20k median story views → €12.50 CPM
+    expect(cpmCents(25000, 20000)).toBe(1250);
+  });
+  it('is null without views or cost', () => {
+    expect(cpmCents(25000, 0)).toBeNull();
+    expect(cpmCents(25000, null)).toBeNull();
+    expect(cpmCents(null, 20000)).toBeNull();
   });
 });
 

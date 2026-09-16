@@ -2,7 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { clicksByInfluencer, useAppData } from '../lib/data';
 import { formatCents } from '../lib/money';
-import { formatRoas, roas, rollupByInfluencer } from '../lib/stats';
+import { cpmCents, formatRoas, roas, rollupByInfluencer } from '../lib/stats';
 import { supabase } from '../lib/supabase';
 import { INFLUENCER_STATUS_LABELS, InfluencerStatus } from '../lib/types';
 
@@ -104,6 +104,8 @@ export default function Influencers() {
               <th>Status</th>
               <th>Code</th>
               <th className="num">Followers</th>
+              <th className="num" title="Story rate ÷ median story views × 1,000">Story CPM</th>
+              <th className="num" title="Reel rate ÷ median reel views × 1,000">Reel CPM</th>
               <th className="num">Posts</th>
               <th className="num">Clicks</th>
               <th className="num">Spend</th>
@@ -121,6 +123,8 @@ export default function Influencers() {
                   <td><span className={`badge status-${i.status}`}>{INFLUENCER_STATUS_LABELS[i.status]}</span></td>
                   <td className="mono">{i.discount_code}</td>
                   <td className="num">{i.follower_count?.toLocaleString('en-GB') ?? '—'}</td>
+                  <td className="num">{formatCents(cpmCents(i.story_rate_cents, i.median_story_views), i.currency)}</td>
+                  <td className="num">{formatCents(cpmCents(i.reel_rate_cents, i.median_reel_views), i.currency)}</td>
                   <td className="num">{r?.posts ?? 0}</td>
                   <td className="num">{r?.clicks ?? 0}</td>
                   <td className="num">{formatCents(r?.spendCents ?? 0, i.currency)}</td>
@@ -130,7 +134,7 @@ export default function Influencers() {
               );
             })}
             {filtered.length === 0 && (
-              <tr><td colSpan={10} className="muted">No influencers match.</td></tr>
+              <tr><td colSpan={12} className="muted">No influencers match.</td></tr>
             )}
           </tbody>
         </table>

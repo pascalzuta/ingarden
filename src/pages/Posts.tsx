@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppData } from '../lib/data';
 import { formatCents, parseMoneyToCents } from '../lib/money';
-import { postCostCents } from '../lib/stats';
+import { formatRoas, postCostCents, roas } from '../lib/stats';
 import { supabase } from '../lib/supabase';
 import { POST_STATUS_LABELS, Post, PostStatus } from '../lib/types';
 
@@ -53,7 +53,8 @@ export default function Posts() {
       discount_code: String(f.get('code') || '').trim(),
       post_url: String(f.get('post_url') || '').trim(),
       views: f.get('views') ? Number(f.get('views')) : null,
-      likes: f.get('likes') ? Number(f.get('likes')) : null,
+      saves: f.get('saves') ? Number(f.get('saves')) : null,
+      link_id: String(f.get('link_id') || '') || null,
       notes: String(f.get('notes') || ''),
     };
     const q = existing
@@ -107,8 +108,17 @@ export default function Posts() {
         <label className="field"><span>Gifting cost</span><input name="gifting" defaultValue={existing ? (existing.gifting_cost_cents / 100).toString() : ''} placeholder="0" /></label>
         <label className="field"><span>Discount code</span><input name="code" defaultValue={existing?.discount_code ?? ''} placeholder="defaults to none" /></label>
         <label className="field"><span>Post URL</span><input name="post_url" defaultValue={existing?.post_url ?? ''} placeholder="https://instagram.com/reel/…" /></label>
-        <label className="field"><span>Views</span><input name="views" type="number" defaultValue={existing?.views ?? ''} /></label>
-        <label className="field"><span>Likes</span><input name="likes" type="number" defaultValue={existing?.likes ?? ''} /></label>
+        <label className="field"><span>Views (reach)</span><input name="views" type="number" defaultValue={existing?.views ?? ''} /></label>
+        <label className="field"><span>Saves</span><input name="saves" type="number" defaultValue={existing?.saves ?? ''} /></label>
+        <label className="field">
+          <span>Tracked link (for clicks)</span>
+          <select name="link_id" defaultValue={existing?.link_id ?? ''}>
+            <option value="">None</option>
+            {data.links.map((l) => (
+              <option key={l.id} value={l.id}>/go/{l.slug}</option>
+            ))}
+          </select>
+        </label>
       </div>
       <label className="field"><span>Notes</span><textarea name="notes" defaultValue={existing?.notes ?? ''} /></label>
       <div className="form-actions">
@@ -150,13 +160,17 @@ export default function Posts() {
           <thead>
             <tr>
               <th>Influencer</th>
-              <th>Title</th>
               <th>Format</th>
               <th>Status</th>
               <th>Scheduled</th>
               <th>Ran</th>
               <th className="num">Cost</th>
+              <th className="num">Views</th>
+              <th className="num">Clicks</th>
+              <th className="num">Orders</th>
+              <th className="num">Saves</th>
               <th className="num">Revenue</th>
+              <th className="num">ROAS</th>
               <th></th>
             </tr>
           </thead>
@@ -164,10 +178,15 @@ export default function Posts() {
             {filtered.map((p) => {
               const late =
                 p.scheduled_at && p.posted_at && new Date(p.posted_at).toDateString() !== new Date(p.scheduled_at).toDateString();
+              const revenue = revenueForPost(p.id);
+              const orders = data.conversions.filter((c) => c.post_id === p.id).length;
+              const clicks = p.link_id ? data.clicks.filter((c) => c.link_id === p.link_id).length : null;
               return (
                 <tr key={p.id}>
-                  <td><Link to={`/influencers/${p.influencer_id}`}>{infName(p.influencer_id)}</Link></td>
-                  <td>{p.title || <span className="muted">—</span>}</td>
+                  <td>
+                    <Link to={`/influencers/${p.influencer_id}`}>{infName(p.influencer_id)}</Link>
+                    {p.title && <div className="muted" style={{ fontSize: 12 }}>{p.title}</div>}
+                  </td>
                   <td><span className="badge format">{p.format}</span></td>
                   <td><span className={`badge status-${p.status}`}>{POST_STATUS_LABELS[p.status]}</span></td>
                   <td>{p.scheduled_at ? new Date(p.scheduled_at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</td>
@@ -176,12 +195,17 @@ export default function Posts() {
                     {late && <span className="badge status-negotiating" title="Ran on a different day than scheduled" style={{ marginLeft: 6 }}>moved</span>}
                   </td>
                   <td className="num">{formatCents(postCostCents(p), p.currency)}</td>
-                  <td className="num">{formatCents(revenueForPost(p.id), p.currency)}</td>
+                  <td className="num">{p.views?.toLocaleString('en-GB') ?? '—'}</td>
+                  <td className="num">{clicks ?? '—'}</td>
+                  <td className="num">{orders || '—'}</td>
+                  <td className="num">{p.saves?.toLocaleString('en-GB') ?? '—'}</td>
+                  <td className="num">{formatCents(revenue, p.currency)}</td>
+                  <td className="num">{formatRoas(roas(revenue, postCostCents(p)))}</td>
                   <td><button className="small" onClick={() => { setEditing(p); setAdding(false); window.scrollTo(0, 0); }}>Edit</button></td>
                 </tr>
               );
             })}
-            {filtered.length === 0 && <tr><td colSpan={9} className="muted">No posts match.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={13} className="muted">No posts match.</td></tr>}
           </tbody>
         </table>
       </div>

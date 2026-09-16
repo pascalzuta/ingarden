@@ -14,6 +14,14 @@ Twelve market-leading tools were studied at UI level (GRIN, Upfluence, CreatorIQ
 6. Reporting at three levels: post, influencer lifetime, and month, with leaderboard sorting and date filters.
 7. A CRM record per creator with contact details, rates, tags, relationship stage, and a full conversation log.
 
+## Metric logic
+
+Two moments matter, and every screen follows them.
+
+Before a deal (influencer level): the manager manually records the influencer's median story views and median reel views over their last ~10 posts, next to the story and reel rates. Rate ÷ median views × 1,000 gives the story CPM and reel CPM, shown on the influencer profile and as roster columns. This is the price-versus-audience check that decides the deal.
+
+After a post (post level): the scorecard is views (reach), clicks (via the post's tracked link), orders (attributed conversions), saves, revenue, and ROAS (revenue ÷ cost). These are the columns on the Posts page and the per-influencer post table.
+
 Left out on purpose (the episodic 80% of features): influencer discovery and search, fake-follower audits, contracts and e-signature, mass payouts, content libraries, competitive benchmarking, automated Instagram metric ingestion (needs creator OAuth or scraping; metrics are entered manually per post instead).
 
 ## Users and access

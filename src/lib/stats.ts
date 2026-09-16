@@ -110,6 +110,13 @@ export function rollupByInfluencer(
   return out;
 }
 
+// Cost per 1,000 views in cents: what a post costs relative to the audience
+// it reaches. Pre-deal: rate ÷ median views; post: cost ÷ actual views.
+export function cpmCents(costCents: number | null | undefined, views: number | null | undefined): number | null {
+  if (costCents == null || views == null || views <= 0) return null;
+  return Math.round((costCents / views) * 1000);
+}
+
 // Return on spend as a multiple; null when there is no spend.
 export function roas(revenueCents: number, spendCents: number): number | null {
   if (spendCents <= 0) return null;
